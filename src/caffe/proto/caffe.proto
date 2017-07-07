@@ -195,6 +195,7 @@ message SolverParameter {
   optional float min_lr = 43 [default = 0.];
   
   optional float base_lr = 5; // The base learning rate
+  optional int32 solvers_per_gpu = 108 [default = 1];
   
   // the number of iterations between displaying info. If display = 0, no info
   // will be displayed.

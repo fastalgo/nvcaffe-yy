@@ -570,24 +570,28 @@ namespace nvml {
 std::mutex NVMLInit::m_;
 
 // set the CPU affinity for this GPU
-void setCpuAffinity(unsigned int rank) {
+void setCpuAffinity(unsigned int rank, int solver_count) {
   std::lock_guard<std::mutex> lock(NVMLInit::m_);
   static thread_local NVMLInit nvml_init_;
   bool result = false;
   unsigned int deviceCount = 0U;
   const std::vector<int>& gpus = Caffe::gpus();
-  if (nvmlDeviceGetCount(&deviceCount) == NVML_SUCCESS) {
-    CHECK_LT(rank, deviceCount);
-    if (rank < deviceCount && rank < gpus.size() &&
-        nvmlDeviceGetHandleByIndex(gpus[rank], &nvml_init_.device_) == NVML_SUCCESS) {
-      if (nvmlDeviceSetCpuAffinity(nvml_init_.device_) == NVML_SUCCESS) {
-        LOG(INFO) << "NVML succeeded to set CPU affinity on device " << gpus[rank];
-        result = true;
+  if (gpus.size() > 0) {
+    if (nvmlDeviceGetCount(&deviceCount) == NVML_SUCCESS) {
+      //CHECK_LT(rank, deviceCount);
+      //if (rank < deviceCount && rank < gpus.size() &&
+      //nvmlDeviceGetHandleByIndex(gpus[rank], &nvml_init_.device_) == NVML_SUCCESS) {
+      if (rank < solver_count && nvmlDeviceGetHandleByIndex(gpus[rank/(solver_count/gpus.size())],
+          &nvml_init_.device_) == NVML_SUCCESS) {
+        if (nvmlDeviceSetCpuAffinity(nvml_init_.device_) == NVML_SUCCESS) {
+          LOG(INFO) << "NVML succeeded to set CPU affinity on device " << gpus[rank];
+          result = true;
+        }
       }
     }
-  }
-  if (!result && rank < gpus.size()) {
-    LOG(ERROR) << "NVML failed to set CPU affinity on device " << gpus[rank];
+    if (!result && rank < gpus.size()) {
+      LOG(ERROR) << "NVML failed to set CPU affinity on device " << gpus[rank];
+    }
   }
 }
 

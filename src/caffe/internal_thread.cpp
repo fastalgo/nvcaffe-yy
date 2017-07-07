@@ -73,7 +73,7 @@ void InternalThread::entry(int thread_id, int device, Caffe::Brew mode, uint64_t
     CUDA_CHECK(cudaSetDevice(device));
     if (set_cpu_affinity) {
 #ifndef NO_NVML
-      nvml::setCpuAffinity(rank);
+      nvml::setCpuAffinity(rank, solver_count);
 #endif
     }
   }

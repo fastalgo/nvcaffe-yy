@@ -70,7 +70,7 @@ class GradientBasedSolverTest : public MultiDeviceTest<TypeParam> {
 
   string RunLeastSquaresSolver(const float learning_rate,
       const float weight_decay, const float momentum, const int num_iters,
-      const int iter_size = 1, const int devices = 1,
+      const int iter_size = 1, const int devices = 1, const int solvers_per_gpu = 1,
       const bool snapshot = false, const char* from_snapshot = NULL) {
     ostringstream proto;
     int device_id = 0;
@@ -86,6 +86,7 @@ class GradientBasedSolverTest : public MultiDeviceTest<TypeParam> {
        "lr_policy: 'fixed' "
        "iter_size: " << iter_size << " "
        "device_id: " << device_id << " "
+       "solvers_per_gpu: " << solvers_per_gpu << " "
        "net_param { "
        "  name: 'TestNetwork' "
        "  default_forward_type: " << Type_Name(tp<Dtype>()) << " "
@@ -497,11 +498,14 @@ class GradientBasedSolverTest : public MultiDeviceTest<TypeParam> {
 
       // Reinitialize the solver and run K+1 solver iterations.
       num_ = kNum * devices;
-      RunLeastSquaresSolver(learning_rate, weight_decay, momentum,
-          iter_to_check + 1, kIterSize, devices);
-
-      // Check that the solver's solution matches ours.
-      CheckLeastSquaresUpdate(updated_params);
+      //RunLeastSquaresSolver(learning_rate, weight_decay, momentum,
+          //iter_to_check + 1, kIterSize, devices);
+      for (int solvers_per_gpu = 1; solvers_per_gpu <= 2; solvers_per_gpu++) {
+        RunLeastSquaresSolver(learning_rate, weight_decay, momentum,
+                iter_to_check + 1, kIterSize, devices, solvers_per_gpu);
+        // Check that the solver's solution matches ours.
+        CheckLeastSquaresUpdate(updated_params);
+      }
 
       // Reset initial value of num_
       num_ = kNum;
@@ -516,8 +520,9 @@ class GradientBasedSolverTest : public MultiDeviceTest<TypeParam> {
     bool snapshot = false;
     const int kIterSize = 1;
     const int kDevices = 1;
+    const int solvers_per_gpu = 1;
     RunLeastSquaresSolver(learning_rate, weight_decay, momentum,
-        total_num_iters, kIterSize, kDevices, snapshot);
+        total_num_iters, kIterSize, kDevices, solvers_per_gpu, snapshot);
 
     // Save the resulting param values.
     vector<shared_ptr<TBlob<Dtype> > > param_copies;
@@ -543,12 +548,12 @@ class GradientBasedSolverTest : public MultiDeviceTest<TypeParam> {
     // Run the solver for num_iters iterations and snapshot.
     snapshot = true;
     string snapshot_name = RunLeastSquaresSolver(learning_rate, weight_decay,
-        momentum, num_iters, kIterSize, kDevices, snapshot);
+        momentum, num_iters, kIterSize, kDevices, solvers_per_gpu, snapshot);
 
     // Reinitialize the solver and run for num_iters more iterations.
     snapshot = false;
     RunLeastSquaresSolver(learning_rate, weight_decay, momentum,
-        total_num_iters, kIterSize, kDevices,
+        total_num_iters, kIterSize, kDevices, solvers_per_gpu,
         snapshot, snapshot_name.c_str());
 
     // Check that params now match.

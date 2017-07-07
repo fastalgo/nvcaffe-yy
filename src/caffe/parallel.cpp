@@ -36,7 +36,7 @@ P2PManager::P2PManager(shared_ptr<Solver> root_solver,
 void P2PManager::Run(const vector<int>& gpus) {
 #ifndef CPU_ONLY
 #ifdef USE_NCCL
-  CHECK_EQ(nranks_, gpus.size());
+  //CHECK_EQ(nranks_, gpus.size());
   CHECK_EQ(nranks_, Caffe::solver_count());
   NCCL_CHECK(ncclGetUniqueId(&nccl_id_));
 #else
@@ -45,9 +45,12 @@ void P2PManager::Run(const vector<int>& gpus) {
 #endif  // CPU_ONLY
   SolverParameter param = root_solver_->param();
   this->shared_ = make_shared<SharedScores<float>>(nranks_);
-  for (int i = 0; i < gpus.size(); ++i) {
-    param.set_device_id(gpus[i]);
-    syncs_[i] = make_shared<P2PSync>(this, root_solver_, i, gpus.size(), param);
+  //for (int i = 0; i < gpus.size(); ++i) {
+  for (int i = 0; i < Caffe::solver_count(); ++i) {
+    //param.set_device_id(gpus[i]);
+    param.set_device_id(i/param.solvers_per_gpu());
+    //syncs_[i] = make_shared<P2PSync>(this, root_solver_, i, gpus.size(), param);
+    syncs_[i] = make_shared<P2PSync>(this, root_solver_, i, nranks_, param);
 #ifndef CPU_ONLY
 #ifdef USE_NCCL
     syncs_[i]->aux_ = &nccl_id_;
@@ -150,7 +153,7 @@ void P2PSync::InternalThreadEntry() {
   }
   solver_->set_callback(this);
 
-  CHECK_EQ(nranks_, Caffe::solver_count());
+  //CHECK_EQ(nranks_, Caffe::solver_count());
 
 #ifndef CPU_ONLY
 #ifdef USE_NCCL

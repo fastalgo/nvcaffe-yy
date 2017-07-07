@@ -124,7 +124,7 @@ struct NVMLInit {
   static std::mutex m_;
 };
 
-void setCpuAffinity(unsigned int rank);
+void setCpuAffinity(unsigned int rank, int solver_count);
 
 }  // namespace nvml
 #endif  // NO_NVML

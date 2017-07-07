@@ -374,7 +374,7 @@ void Solver::Reduce(int device, Caffe::Brew mode, uint64_t random_seed,
   if (Caffe::mode() == Caffe::GPU) {
     CUDA_CHECK(cudaSetDevice(device));
 #ifndef NO_NVML
-    nvml::setCpuAffinity(rank_);
+    nvml::setCpuAffinity(rank_, solver_count);
 #endif
   }
 #endif

@@ -192,8 +192,9 @@ int train() {
     solver_param.set_device_id(gpus[0]);
     Caffe::set_mode(Caffe::GPU);
     Caffe::set_gpus(gpus);
-    Caffe::set_solver_count(gpus.size());
-    CHECK_EQ(gpus.size(), Caffe::solver_count());
+    //Caffe::set_solver_count(gpus.size());
+    Caffe::set_solver_count(solver_param.solvers_per_gpu()*gpus.size());
+    //CHECK_EQ(gpus.size(), Caffe::solver_count());
 
     LOG(INFO) << "Using GPUs " << s.str();
 #ifndef CPU_ONLY
@@ -219,8 +220,10 @@ int train() {
     CopyLayers(solver.get(), FLAGS_weights);
   }
 
-  if (gpus.size() > 1) {
-    caffe::P2PManager p2p_mgr(solver, gpus.size(), solver->param());
+  //if (gpus.size() > 1) {
+  if (Caffe::solver_count() > 1) {
+    //caffe::P2PManager p2p_mgr(solver, gpus.size(), solver->param());
+    caffe::P2PManager p2p_mgr(solver, Caffe::solver_count(), solver->param());
     p2p_mgr.Run(gpus);
   } else {
     LOG(INFO) << "Starting Optimization";
